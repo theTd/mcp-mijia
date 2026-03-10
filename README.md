@@ -51,10 +51,12 @@ python test_mijia.py
 
 3. Run with Xiaozhi | 配合小智运行:
 ```bash
+export MCP_ENDPOINT=wss://api.xiaozhi.me/mcp/?token=xxx
 python mcp_pipe.py mijia.py
 ```
 Or run all configured servers | 或运行所有配置的服务:
 ```bash
+export MCP_ENDPOINT=wss://api.xiaozhi.me/mcp/?token=xxx
 python mcp_pipe.py
 ```
 
