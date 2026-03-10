@@ -60,6 +60,22 @@ export MCP_ENDPOINT=wss://api.xiaozhi.me/mcp/?token=xxx
 python mcp_pipe.py
 ```
 
+4. Interactive mode for testing (optional) | 交互模式测试(可选):
+```bash
+python test_mijia.py -i
+```
+Enter commands interactively to test device control. | 交互式输入命令测试设备控制。
+
+Commands:
+  1. List device capabilities
+  2. Get device properties
+  3. Get specific property
+  4. Set property
+  5. Control device (on/off/toggle)
+  6. Run device action
+  7. List scenes
+  8. Run scene
+
 ## Configuration | 配置
 
 ### Environment Variables | 环境变量
