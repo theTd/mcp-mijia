@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "local-stdio-mijia": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "mijia"]
+    }
+  }
+}
