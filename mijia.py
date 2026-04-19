@@ -70,12 +70,34 @@ def get_device_properties(dev_name: str = None, did: str = None) -> dict:
         api = get_api()
         device = mijiaDevice(api, dev_name=dev_name, did=did)
         target = did if did else dev_name
+        
+        # Build batch query for all readable properties
+        batch_params = []
+        prop_names = []
+        for p_name, p_obj in device.prop_list.items():
+            if "_" in p_name: # Skip alias
+                continue
+            if "r" in p_obj.rw:
+                method = p_obj.method.copy()
+                method["did"] = device.did
+                batch_params.append(method)
+                prop_names.append(p_name)
+        
+        if not batch_params:
+            return {"success": True, "device": target, "properties": {}}
+            
+        # Execute batch query
+        results = api.get_devices_prop(batch_params)
+        
+        # Parse results
         props = {}
-        for prop_name in device.prop_list:
-            try:
-                props[prop_name] = device.get(prop_name)
-            except (DeviceGetError, ValueError):
-                props[prop_name] = None
+        for i, res in enumerate(results):
+            p_name = prop_names[i]
+            if res.get("code") == 0:
+                props[p_name] = res.get("value")
+            else:
+                props[p_name] = None
+        
         logger.info(f"Got properties for device '{target}': {props}")
         return {"success": True, "device": target, "properties": props}
     except DeviceNotFoundError as e:
@@ -86,6 +108,63 @@ def get_device_properties(dev_name: str = None, did: str = None) -> dict:
         return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please use DID for unique identification"}
     except (LoginError, APIError) as e:
         logger.error(f"API error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@mcp.tool()
+def batch_get_device_properties(devices: list[dict]) -> dict:
+    """Get properties for multiple devices in a single batch.
+    
+    Args:
+        devices: A list of dicts, each containing 'did' or 'dev_name'.
+                 Example: [{"did": "123"}, {"dev_name": "Living Room Light"}]
+    """
+    try:
+        api = get_api()
+        all_batch_params = []
+        device_mapping = [] # List of (device_did, prop_name) to map results back
+        
+        # 1. Initialize device objects and collect property methods
+        for dev_query in devices:
+            try:
+                did = dev_query.get("did")
+                dev_name = dev_query.get("dev_name")
+                device = mijiaDevice(api, dev_name=dev_name, did=did)
+                
+                for p_name, p_obj in device.prop_list.items():
+                    if "_" in p_name: continue
+                    if "r" in p_obj.rw:
+                        method = p_obj.method.copy()
+                        method["did"] = device.did
+                        all_batch_params.append(method)
+                        device_mapping.append((device.did, p_name))
+            except (DeviceNotFoundError, MultipleDevicesFoundError) as e:
+                logger.warning(f"Skipping device in batch: {e}")
+                continue
+
+        if not all_batch_params:
+            return {"success": True, "results": {}}
+
+        # 2. Execute batch query
+        # Note: API might have a limit on the number of properties per request.
+        # If it fails, we might need to chunk all_batch_params.
+        results = api.get_devices_prop(all_batch_params)
+        
+        # 3. Organize results by device DID
+        output = {}
+        for i, res in enumerate(results):
+            did, p_name = device_mapping[i]
+            if did not in output:
+                output[did] = {}
+            
+            if res.get("code") == 0:
+                output[did][p_name] = res.get("value")
+            else:
+                output[did][p_name] = None
+                
+        return {"success": True, "results": output}
+    except (LoginError, APIError) as e:
+        logger.error(f"Batch API error: {e}")
         return {"success": False, "error": str(e)}
 
 
