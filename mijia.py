@@ -64,43 +64,45 @@ def list_devices(home_id: str = None) -> dict:
 
 
 @mcp.tool()
-def get_device_properties(dev_name: str) -> dict:
-    """Get all available properties and their current values for a device by its name."""
+def get_device_properties(dev_name: str = None, did: str = None) -> dict:
+    """Get all available properties and their current values for a device by its name or DID. Recommend using DID."""
     try:
         api = get_api()
-        device = mijiaDevice(api, dev_name=dev_name)
+        device = mijiaDevice(api, dev_name=dev_name, did=did)
+        target = did if did else dev_name
         props = {}
         for prop_name in device.prop_list:
             try:
                 props[prop_name] = device.get(prop_name)
             except (DeviceGetError, ValueError):
                 props[prop_name] = None
-        logger.info(f"Got properties for device '{dev_name}': {props}")
-        return {"success": True, "device": dev_name, "properties": props}
+        logger.info(f"Got properties for device '{target}': {props}")
+        return {"success": True, "device": target, "properties": props}
     except DeviceNotFoundError as e:
         logger.error(f"Device not found: {e}")
-        return {"success": False, "error": f"Device '{dev_name}' not found"}
+        return {"success": False, "error": f"Device '{did if did else dev_name}' not found"}
     except MultipleDevicesFoundError as e:
         logger.error(f"Multiple devices found: {e}")
-        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please be more specific"}
+        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please use DID for unique identification"}
     except (LoginError, APIError) as e:
         logger.error(f"API error: {e}")
         return {"success": False, "error": str(e)}
 
 
 @mcp.tool()
-def get_device_property(dev_name: str, prop_name: str) -> dict:
-    """Get a specific property value from a device. Use list_device_capabilities to see available properties."""
+def get_device_property(dev_name: str = None, prop_name: str = None, did: str = None) -> dict:
+    """Get a specific property value from a device by its name or DID. Use list_device_capabilities to see available properties."""
     try:
         api = get_api()
-        device = mijiaDevice(api, dev_name=dev_name)
+        device = mijiaDevice(api, dev_name=dev_name, did=did)
+        target = did if did else dev_name
         value = device.get(prop_name)
-        logger.info(f"Got property '{prop_name}' from device '{dev_name}': {value}")
-        return {"success": True, "device": dev_name, "property": prop_name, "value": value}
+        logger.info(f"Got property '{prop_name}' from device '{target}': {value}")
+        return {"success": True, "device": target, "property": prop_name, "value": value}
     except DeviceNotFoundError:
-        return {"success": False, "error": f"Device '{dev_name}' not found"}
+        return {"success": False, "error": f"Device '{did if did else dev_name}' not found"}
     except MultipleDevicesFoundError:
-        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please be more specific"}
+        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please use DID for unique identification"}
     except DeviceGetError as e:
         logger.error(f"Failed to get property: {e}")
         return {"success": False, "error": f"Failed to get property '{prop_name}': {e}"}
@@ -110,11 +112,12 @@ def get_device_property(dev_name: str, prop_name: str) -> dict:
 
 
 @mcp.tool()
-def set_device_property(dev_name: str, prop_name: str, value: str) -> dict:
-    """Set a property value on a device. The value will be automatically converted to the appropriate type (bool, int, float, or string)."""
+def set_device_property(dev_name: str = None, prop_name: str = None, value: str = None, did: str = None) -> dict:
+    """Set a property value on a device by its name or DID. The value will be automatically converted to the appropriate type (bool, int, float, or string)."""
     try:
         api = get_api()
-        device = mijiaDevice(api, dev_name=dev_name)
+        device = mijiaDevice(api, dev_name=dev_name, did=did)
+        target = did if did else dev_name
 
         # Auto-convert value to appropriate type
         converted_value = value
@@ -132,12 +135,12 @@ def set_device_property(dev_name: str, prop_name: str, value: str) -> dict:
                     pass  # Keep as string
 
         device.set(prop_name, converted_value)
-        logger.info(f"Set property '{prop_name}' on device '{dev_name}' to {converted_value}")
-        return {"success": True, "device": dev_name, "property": prop_name, "value": converted_value}
+        logger.info(f"Set property '{prop_name}' on device '{target}' to {converted_value}")
+        return {"success": True, "device": target, "property": prop_name, "value": converted_value}
     except DeviceNotFoundError:
-        return {"success": False, "error": f"Device '{dev_name}' not found"}
+        return {"success": False, "error": f"Device '{did if did else dev_name}' not found"}
     except MultipleDevicesFoundError:
-        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please be more specific"}
+        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please use DID for unique identification"}
     except DeviceSetError as e:
         logger.error(f"Failed to set property: {e}")
         return {"success": False, "error": f"Failed to set property '{prop_name}': {e}"}
@@ -147,18 +150,19 @@ def set_device_property(dev_name: str, prop_name: str, value: str) -> dict:
 
 
 @mcp.tool()
-def run_device_action(dev_name: str, action_name: str) -> dict:
-    """Run an action on a device (e.g., 'toggle', 'start-sweep'). Use list_device_capabilities to see available actions."""
+def run_device_action(dev_name: str = None, action_name: str = None, did: str = None) -> dict:
+    """Run an action on a device by its name or DID (e.g., 'toggle', 'start-sweep'). Use list_device_capabilities to see available actions."""
     try:
         api = get_api()
-        device = mijiaDevice(api, dev_name=dev_name)
+        device = mijiaDevice(api, dev_name=dev_name, did=did)
+        target = did if did else dev_name
         device.run_action(action_name)
-        logger.info(f"Ran action '{action_name}' on device '{dev_name}'")
-        return {"success": True, "device": dev_name, "action": action_name}
+        logger.info(f"Ran action '{action_name}' on device '{target}'")
+        return {"success": True, "device": target, "action": action_name}
     except DeviceNotFoundError:
-        return {"success": False, "error": f"Device '{dev_name}' not found"}
+        return {"success": False, "error": f"Device '{did if did else dev_name}' not found"}
     except MultipleDevicesFoundError:
-        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please be more specific"}
+        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please use DID for unique identification"}
     except DeviceActionError as e:
         logger.error(f"Failed to run action: {e}")
         return {"success": False, "error": f"Failed to run action '{action_name}': {e}"}
@@ -168,22 +172,23 @@ def run_device_action(dev_name: str, action_name: str) -> dict:
 
 
 @mcp.tool()
-def list_device_capabilities(dev_name: str) -> dict:
-    """List all available properties and actions for a device."""
+def list_device_capabilities(dev_name: str = None, did: str = None) -> dict:
+    """List all available properties and actions for a device by its name or DID."""
     try:
         api = get_api()
-        device = mijiaDevice(api, dev_name=dev_name)
-        logger.info(f"Got capabilities for device '{dev_name}'")
+        device = mijiaDevice(api, dev_name=dev_name, did=did)
+        target = did if did else dev_name
+        logger.info(f"Got capabilities for device '{target}'")
         return {
             "success": True,
-            "device": dev_name,
+            "device": target,
             "properties": device.prop_list,
             "actions": device.action_list
         }
     except DeviceNotFoundError:
-        return {"success": False, "error": f"Device '{dev_name}' not found"}
+        return {"success": False, "error": f"Device '{did if did else dev_name}' not found"}
     except MultipleDevicesFoundError:
-        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please be more specific"}
+        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please use DID for unique identification"}
     except (LoginError, APIError) as e:
         logger.error(f"API error: {e}")
         return {"success": False, "error": str(e)}
@@ -217,16 +222,17 @@ def run_scene(scene_id: str, home_id: str) -> dict:
 
 
 @mcp.tool()
-def control_device(dev_name: str, command: str) -> dict:
+def control_device(dev_name: str = None, command: str = None, did: str = None) -> dict:
     """
-    High-level device control with common commands.
+    High-level device control with common commands by device name or DID.
     Supported commands: 'on', 'off', 'toggle', or property assignments like 'brightness=50', 'color_temperature=4000'.
     For lights: 'on', 'off', 'toggle', 'brightness=<0-100>', 'color_temperature=<value>'
     For switches/plugs: 'on', 'off', 'toggle'
     """
     try:
         api = get_api()
-        device = mijiaDevice(api, dev_name=dev_name)
+        device = mijiaDevice(api, dev_name=dev_name, did=did)
+        target = did if did else dev_name
 
         command = command.strip().lower()
 
@@ -235,21 +241,21 @@ def control_device(dev_name: str, command: str) -> dict:
                 device.set('on', True)
             else:
                 device.run_action('turn-on')  # Try action if 'on' property doesn't exist
-            logger.info(f"Turned on device '{dev_name}'")
-            return {"success": True, "device": dev_name, "action": "turned on"}
+            logger.info(f"Turned on device '{target}'")
+            return {"success": True, "device": target, "action": "turned on"}
 
         elif command == 'off':
             if 'on' in device.prop_list:
                 device.set('on', False)
             else:
                 device.run_action('turn-off')  # Try action if 'on' property doesn't exist
-            logger.info(f"Turned off device '{dev_name}'")
-            return {"success": True, "device": dev_name, "action": "turned off"}
+            logger.info(f"Turned off device '{target}'")
+            return {"success": True, "device": target, "action": "turned off"}
 
         elif command == 'toggle':
             device.run_action('toggle')
-            logger.info(f"Toggled device '{dev_name}'")
-            return {"success": True, "device": dev_name, "action": "toggled"}
+            logger.info(f"Toggled device '{target}'")
+            return {"success": True, "device": target, "action": "toggled"}
 
         elif '=' in command:
             prop, value = command.split('=', 1)
@@ -271,16 +277,16 @@ def control_device(dev_name: str, command: str) -> dict:
                         converted = value
 
             device.set(prop, converted)
-            logger.info(f"Set '{prop}' to {converted} on device '{dev_name}'")
-            return {"success": True, "device": dev_name, "property": prop, "value": converted}
+            logger.info(f"Set '{prop}' to {converted} on device '{target}'")
+            return {"success": True, "device": target, "property": prop, "value": converted}
 
         else:
             return {"success": False, "error": f"Unknown command '{command}'. Use 'on', 'off', 'toggle', or 'property=value'"}
 
     except DeviceNotFoundError:
-        return {"success": False, "error": f"Device '{dev_name}' not found"}
+        return {"success": False, "error": f"Device '{did if did else dev_name}' not found"}
     except MultipleDevicesFoundError:
-        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please be more specific"}
+        return {"success": False, "error": f"Multiple devices found with name '{dev_name}', please use DID for unique identification"}
     except (DeviceSetError, DeviceActionError) as e:
         logger.error(f"Failed to control device: {e}")
         return {"success": False, "error": str(e)}

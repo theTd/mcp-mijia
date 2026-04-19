@@ -19,20 +19,26 @@ This project provides an MCP (Model Context Protocol) server that enables AI ass
 - 🎬 Run device actions and scenes | 运行设备动作和场景
 - 🔍 Query device capabilities | 查询设备能力
 
+## Device Identification | 设备标识 (DID)
+
+All device-related tools support both `dev_name` (device name) and `did` (Device ID). **It is highly recommended to use `did` for operations**, as device names may not be unique or may change. You can find the `did` for each device using the `list_devices` tool.
+
+所有设备相关的工具都支持 `dev_name`（设备名称）和 `did`（设备 ID）。**强烈建议使用 `did` 进行操作**，因为设备名称可能不唯一或可能发生更改。您可以使用 `list_devices` 工具找到每个设备的 `did`。
+
 ## Available Tools | 可用工具
 
-| Tool | Description |
-|------|-------------|
-| `list_homes` | List all homes in the Mi Home account |
-| `list_devices` | List all devices (optionally filter by home) |
-| `list_device_capabilities` | List available properties and actions for a device |
-| `get_device_properties` | Get all property values for a device |
-| `get_device_property` | Get a specific property value |
-| `set_device_property` | Set a property value on a device |
-| `run_device_action` | Run an action on a device |
-| `control_device` | High-level control: 'on', 'off', 'toggle', or 'property=value' |
-| `list_scenes` | List all scenes/automations |
-| `run_scene` | Run a scene by its ID |
+| Tool | Description | Recommended Param |
+|------|-------------|-------------------|
+| `list_homes` | List all homes in the Mi Home account | - |
+| `list_devices` | List all devices (optionally filter by home) | - |
+| `list_device_capabilities` | List available properties and actions for a device | `did` |
+| `get_device_properties` | Get all property values for a device | `did` |
+| `get_device_property` | Get a specific property value | `did` |
+| `set_device_property` | Set a property value on a device | `did` |
+| `run_device_action` | Run an action on a device | `did` |
+| `control_device` | High-level control: 'on', 'off', 'toggle', or 'property=value' | `did` |
+| `list_scenes` | List all scenes/automations | - |
+| `run_scene` | Run a scene by its ID | - |
 
 ## Quick Start | 快速开始
 

@@ -73,45 +73,51 @@ def test_list_scenes():
     return result
 
 
-def test_device_capabilities(dev_name: str):
+def test_device_capabilities(dev_name: str = None, did: str = None):
     """Test getting device capabilities."""
-    result = list_device_capabilities(dev_name)
-    print_result(f"list_device_capabilities('{dev_name}')", result)
+    result = list_device_capabilities(dev_name=dev_name, did=did)
+    target = did if did else dev_name
+    print_result(f"list_device_capabilities('{target}')", result)
     return result
 
 
-def test_get_device_properties(dev_name: str):
+def test_get_device_properties(dev_name: str = None, did: str = None):
     """Test getting all device properties."""
-    result = get_device_properties(dev_name)
-    print_result(f"get_device_properties('{dev_name}')", result)
+    result = get_device_properties(dev_name=dev_name, did=did)
+    target = did if did else dev_name
+    print_result(f"get_device_properties('{target}')", result)
     return result
 
 
-def test_get_device_property(dev_name: str, prop_name: str):
+def test_get_device_property(dev_name: str = None, prop_name: str = None, did: str = None):
     """Test getting a specific device property."""
-    result = get_device_property(dev_name, prop_name)
-    print_result(f"get_device_property('{dev_name}', '{prop_name}')", result)
+    result = get_device_property(dev_name=dev_name, prop_name=prop_name, did=did)
+    target = did if did else dev_name
+    print_result(f"get_device_property('{target}', '{prop_name}')", result)
     return result
 
 
-def test_set_device_property(dev_name: str, prop_name: str, value: str):
+def test_set_device_property(dev_name: str = None, prop_name: str = None, value: str = None, did: str = None):
     """Test setting a device property."""
-    result = set_device_property(dev_name, prop_name, value)
-    print_result(f"set_device_property('{dev_name}', '{prop_name}', '{value}')", result)
+    result = set_device_property(dev_name=dev_name, prop_name=prop_name, value=value, did=did)
+    target = did if did else dev_name
+    print_result(f"set_device_property('{target}', '{prop_name}', '{value}')", result)
     return result
 
 
-def test_control_device(dev_name: str, command: str):
+def test_control_device(dev_name: str = None, command: str = None, did: str = None):
     """Test high-level device control."""
-    result = control_device(dev_name, command)
-    print_result(f"control_device('{dev_name}', '{command}')", result)
+    result = control_device(dev_name=dev_name, command=command, did=did)
+    target = did if did else dev_name
+    print_result(f"control_device('{target}', '{command}')", result)
     return result
 
 
-def test_run_device_action(dev_name: str, action_name: str):
+def test_run_device_action(dev_name: str = None, action_name: str = None, did: str = None):
     """Test running a device action."""
-    result = run_device_action(dev_name, action_name)
-    print_result(f"run_device_action('{dev_name}', '{action_name}')", result)
+    result = run_device_action(dev_name=dev_name, action_name=action_name, did=did)
+    target = did if did else dev_name
+    print_result(f"run_device_action('{target}', '{action_name}')", result)
     return result
 
 
@@ -137,14 +143,14 @@ def run_basic_tests():
     # Test 3: List scenes
     test_list_scenes()
 
-    # If we found devices, test capabilities on the first one
+    # If we found devices, test capabilities on the first one using DID
     if devices_result.get("success") and devices_result.get("devices"):
         first_device = devices_result["devices"][0]
-        dev_name = first_device.get("name")
-        if dev_name:
-            print(f"\n--- Testing with first device: '{dev_name}' ---")
-            test_device_capabilities(dev_name)
-            test_get_device_properties(dev_name)
+        did = first_device.get("did")
+        if did:
+            print(f"\n--- Testing with first device using DID: '{did}' ---")
+            test_device_capabilities(did=did)
+            test_get_device_properties(did=did)
 
 
 def run_interactive_tests():
@@ -166,17 +172,17 @@ def run_interactive_tests():
 
     print("\nAvailable devices:")
     for i, dev in enumerate(devices):
-        print(f"  {i+1}. {dev.get('name')} ({dev.get('model')})")
+        print(f"  {i+1}. {dev.get('name')} ({dev.get('model')}) - DID: {dev.get('did')}")
 
     while True:
         print("\n" + "-"*40)
         print("Commands:")
-        print("  1. List device capabilities")
-        print("  2. Get device properties")
-        print("  3. Get specific property")
-        print("  4. Set property")
-        print("  5. Control device (on/off/toggle)")
-        print("  6. Run device action")
+        print("  1. List device capabilities (by DID)")
+        print("  2. Get device properties (by DID)")
+        print("  3. Get specific property (by DID)")
+        print("  4. Set property (by DID)")
+        print("  5. Control device (by DID) (on/off/toggle)")
+        print("  6. Run device action (by DID)")
         print("  7. List scenes")
         print("  8. Run scene")
         print("  q. Quit")
@@ -188,33 +194,33 @@ def run_interactive_tests():
             break
 
         elif choice == '1':
-            dev_name = input("Device name: ").strip()
-            test_device_capabilities(dev_name)
+            did = input("Device DID: ").strip()
+            test_device_capabilities(did=did)
 
         elif choice == '2':
-            dev_name = input("Device name: ").strip()
-            test_get_device_properties(dev_name)
+            did = input("Device DID: ").strip()
+            test_get_device_properties(did=did)
 
         elif choice == '3':
-            dev_name = input("Device name: ").strip()
+            did = input("Device DID: ").strip()
             prop_name = input("Property name: ").strip()
-            test_get_device_property(dev_name, prop_name)
+            test_get_device_property(did=did, prop_name=prop_name)
 
         elif choice == '4':
-            dev_name = input("Device name: ").strip()
+            did = input("Device DID: ").strip()
             prop_name = input("Property name: ").strip()
             value = input("Value: ").strip()
-            test_set_device_property(dev_name, prop_name, value)
+            test_set_device_property(did=did, prop_name=prop_name, value=value)
 
         elif choice == '5':
-            dev_name = input("Device name: ").strip()
+            did = input("Device DID: ").strip()
             command = input("Command (on/off/toggle/brightness=50): ").strip()
-            test_control_device(dev_name, command)
+            test_control_device(did=did, command=command)
 
         elif choice == '6':
-            dev_name = input("Device name: ").strip()
+            did = input("Device DID: ").strip()
             action_name = input("Action name: ").strip()
-            test_run_device_action(dev_name, action_name)
+            test_run_device_action(did=did, action_name=action_name)
 
         elif choice == '7':
             test_list_scenes()
