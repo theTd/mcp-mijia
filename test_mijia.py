@@ -9,6 +9,7 @@ Set MIJIA_AUTH_PATH environment variable to use a custom auth file path.
 
 import sys
 import logging
+import inspect
 
 # Fix UTF-8 encoding for Windows console
 if sys.platform == 'win32':
@@ -52,6 +53,33 @@ def print_result(name: str, result: dict):
     print()
 
 
+def run_signature_compatibility_checks():
+    """Verify legacy dev_name calls and newer DID-based calls still bind correctly."""
+    print("\n" + "="*60)
+    print("RUNNING SIGNATURE COMPATIBILITY CHECKS")
+    print("="*60)
+
+    checks = [
+        ("list_device_capabilities(dev_name)", list_device_capabilities, ("demo-device",), {}),
+        ("list_device_capabilities(did=..., json_safe=True)", list_device_capabilities, (), {"did": "123456789", "json_safe": True}),
+        ("get_device_properties(dev_name)", get_device_properties, ("demo-device",), {}),
+        ("get_device_properties(did=...)", get_device_properties, (), {"did": "123456789"}),
+        ("get_device_property(dev_name, prop_name)", get_device_property, ("demo-device", "on"), {}),
+        ("get_device_property(prop_name=..., did=...)", get_device_property, (), {"prop_name": "on", "did": "123456789"}),
+        ("set_device_property(dev_name, prop_name, value)", set_device_property, ("demo-device", "on", "false"), {}),
+        ("set_device_property(prop_name=..., value=..., did=...)", set_device_property, (), {"prop_name": "on", "value": "false", "did": "123456789"}),
+        ("run_device_action(dev_name, action_name)", run_device_action, ("demo-device", "toggle"), {}),
+        ("run_device_action(action_name=..., did=...)", run_device_action, (), {"action_name": "toggle", "did": "123456789"}),
+        ("control_device(dev_name, command)", control_device, ("demo-device", "on"), {}),
+        ("control_device(command=..., did=...)", control_device, (), {"command": "on", "did": "123456789"}),
+    ]
+
+    for label, fn, args, kwargs in checks:
+        inspect.signature(fn).bind(*args, **kwargs)
+        print(f"  ✓ {label}")
+    print()
+
+
 def test_list_homes():
     """Test listing all homes."""
     result = list_homes()
@@ -73,45 +101,45 @@ def test_list_scenes():
     return result
 
 
-def test_device_capabilities(dev_name: str):
+def test_device_capabilities(dev_name: str = None, did: str = None):
     """Test getting device capabilities."""
-    result = list_device_capabilities(dev_name)
-    print_result(f"list_device_capabilities('{dev_name}')", result)
+    result = list_device_capabilities(dev_name=dev_name, did=did)
+    print_result(f"list_device_capabilities(dev_name={dev_name!r}, did={did!r})", result)
     return result
 
 
-def test_get_device_properties(dev_name: str):
+def test_get_device_properties(dev_name: str = None, did: str = None):
     """Test getting all device properties."""
-    result = get_device_properties(dev_name)
-    print_result(f"get_device_properties('{dev_name}')", result)
+    result = get_device_properties(dev_name=dev_name, did=did)
+    print_result(f"get_device_properties(dev_name={dev_name!r}, did={did!r})", result)
     return result
 
 
-def test_get_device_property(dev_name: str, prop_name: str):
+def test_get_device_property(prop_name: str, dev_name: str = None, did: str = None):
     """Test getting a specific device property."""
-    result = get_device_property(dev_name, prop_name)
-    print_result(f"get_device_property('{dev_name}', '{prop_name}')", result)
+    result = get_device_property(dev_name=dev_name, prop_name=prop_name, did=did)
+    print_result(f"get_device_property(dev_name={dev_name!r}, prop_name={prop_name!r}, did={did!r})", result)
     return result
 
 
-def test_set_device_property(dev_name: str, prop_name: str, value: str):
+def test_set_device_property(prop_name: str, value: str, dev_name: str = None, did: str = None):
     """Test setting a device property."""
-    result = set_device_property(dev_name, prop_name, value)
-    print_result(f"set_device_property('{dev_name}', '{prop_name}', '{value}')", result)
+    result = set_device_property(dev_name=dev_name, prop_name=prop_name, value=value, did=did)
+    print_result(f"set_device_property(dev_name={dev_name!r}, prop_name={prop_name!r}, value={value!r}, did={did!r})", result)
     return result
 
 
-def test_control_device(dev_name: str, command: str):
+def test_control_device(command: str, dev_name: str = None, did: str = None):
     """Test high-level device control."""
-    result = control_device(dev_name, command)
-    print_result(f"control_device('{dev_name}', '{command}')", result)
+    result = control_device(dev_name=dev_name, command=command, did=did)
+    print_result(f"control_device(dev_name={dev_name!r}, command={command!r}, did={did!r})", result)
     return result
 
 
-def test_run_device_action(dev_name: str, action_name: str):
+def test_run_device_action(action_name: str, dev_name: str = None, did: str = None):
     """Test running a device action."""
-    result = run_device_action(dev_name, action_name)
-    print_result(f"run_device_action('{dev_name}', '{action_name}')", result)
+    result = run_device_action(dev_name=dev_name, action_name=action_name, did=did)
+    print_result(f"run_device_action(dev_name={dev_name!r}, action_name={action_name!r}, did={did!r})", result)
     return result
 
 
@@ -128,6 +156,8 @@ def run_basic_tests():
     print("RUNNING BASIC DISCOVERY TESTS")
     print("="*60)
 
+    run_signature_compatibility_checks()
+
     # Test 1: List homes
     homes_result = test_list_homes()
 
@@ -141,10 +171,11 @@ def run_basic_tests():
     if devices_result.get("success") and devices_result.get("devices"):
         first_device = devices_result["devices"][0]
         dev_name = first_device.get("name")
+        did = first_device.get("did")
         if dev_name:
-            print(f"\n--- Testing with first device: '{dev_name}' ---")
-            test_device_capabilities(dev_name)
-            test_get_device_properties(dev_name)
+            print(f"\n--- Testing with first device: '{dev_name}' ({did}) ---")
+            test_device_capabilities(dev_name=dev_name, did=did)
+            test_get_device_properties(dev_name=dev_name, did=did)
 
 
 def run_interactive_tests():
@@ -166,7 +197,13 @@ def run_interactive_tests():
 
     print("\nAvailable devices:")
     for i, dev in enumerate(devices):
-        print(f"  {i+1}. {dev.get('name')} ({dev.get('model')})")
+        print(f"  {i+1}. {dev.get('name')} ({dev.get('model')}) did={dev.get('did')}")
+
+    def prompt_device_selector():
+        selector = input("Device DID (recommended, press Enter to use name): ").strip()
+        if selector:
+            return {"did": selector, "dev_name": None}
+        return {"did": None, "dev_name": input("Device name: ").strip()}
 
     while True:
         print("\n" + "-"*40)
@@ -188,33 +225,33 @@ def run_interactive_tests():
             break
 
         elif choice == '1':
-            dev_name = input("Device name: ").strip()
-            test_device_capabilities(dev_name)
+            selector = prompt_device_selector()
+            test_device_capabilities(**selector)
 
         elif choice == '2':
-            dev_name = input("Device name: ").strip()
-            test_get_device_properties(dev_name)
+            selector = prompt_device_selector()
+            test_get_device_properties(**selector)
 
         elif choice == '3':
-            dev_name = input("Device name: ").strip()
+            selector = prompt_device_selector()
             prop_name = input("Property name: ").strip()
-            test_get_device_property(dev_name, prop_name)
+            test_get_device_property(prop_name, **selector)
 
         elif choice == '4':
-            dev_name = input("Device name: ").strip()
+            selector = prompt_device_selector()
             prop_name = input("Property name: ").strip()
             value = input("Value: ").strip()
-            test_set_device_property(dev_name, prop_name, value)
+            test_set_device_property(prop_name, value, **selector)
 
         elif choice == '5':
-            dev_name = input("Device name: ").strip()
+            selector = prompt_device_selector()
             command = input("Command (on/off/toggle/brightness=50): ").strip()
-            test_control_device(dev_name, command)
+            test_control_device(command, **selector)
 
         elif choice == '6':
-            dev_name = input("Device name: ").strip()
+            selector = prompt_device_selector()
             action_name = input("Action name: ").strip()
-            test_run_device_action(dev_name, action_name)
+            test_run_device_action(action_name, **selector)
 
         elif choice == '7':
             test_list_scenes()
@@ -236,17 +273,19 @@ if __name__ == "__main__":
                         help="Run in interactive mode")
     parser.add_argument("--device", "-d", type=str,
                         help="Device name for quick test")
+    parser.add_argument("--did", type=str,
+                        help="Device DID for exact quick test")
     parser.add_argument("--command", "-c", type=str,
-                        help="Command to run on device (with --device)")
+                        help="Command to run on device (with --device or --did)")
     args = parser.parse_args()
 
-    if args.device and args.command:
+    if (args.device or args.did) and args.command:
         # Quick device control
-        test_control_device(args.device, args.command)
-    elif args.device:
+        test_control_device(args.command, dev_name=args.device, did=args.did)
+    elif args.device or args.did:
         # Show device info
-        test_device_capabilities(args.device)
-        test_get_device_properties(args.device)
+        test_device_capabilities(dev_name=args.device, did=args.did)
+        test_get_device_properties(dev_name=args.device, did=args.did)
     elif args.interactive:
         run_interactive_tests()
     else:
